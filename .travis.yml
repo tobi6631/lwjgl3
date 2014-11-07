@@ -1,0 +1,17 @@
+env:
+  global:
+  - secure: "AzM98HKS2RDP+/WdvsFiEqTbVPwLBEAtNXDQPR7cV1gAEZoNhri/iINnRAHtECgVQDt2gKmxEiyOA07zMKPpt5PwhoyZUnICwxl1t2FOkTL4LlfI+3ew1rf4F8wmaSQX/BRT7b3IgyEI0RFRCow8KH49X8xdEtAFYJB3YFu2Y6M="
+  - secure: "BDNmD9y3mdZEQoFgXW2dC1FawofkThFwbITidMqeKLxSstNxQGKCpxOFAV604kaTGsf7ihpdm8WYE5IjHKTaoewdQ9hLXZPtswWXq5Ebe2gKHqJVNZa2bFD6hQBD2S7BLWWeAVIoLkyfV/QLnplOquUZTXWZ3TW2A+IXzQE+AnE="
+language: objective-c
+compiler: clang
+jdk: oraclejdk7
+before_install:
+- brew update
+install:
+- brew install ant
+- brew install awscli
+script:
+- export JAVA7_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home
+- ant compile-templates
+- ant compile-native
+- "aws s3 cp bin/macosx/x64/liblwjgl.dylib s3://build.lwjgl.org/nightly/macosx/x64/liblwjgl.dylib --acl public-read --storage-class REDUCED_REDUNDANCY"
