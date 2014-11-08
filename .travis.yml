@@ -12,6 +12,7 @@ install:
 - brew install awscli
 script:
 - export JAVA7_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home
+- export LWJGL_BUILD_TYPE=nightly
 - ant compile-templates
 - ant compile-native
 - "aws s3 cp bin/macosx/x64/liblwjgl.dylib s3://build.lwjgl.org/nightly/macosx/x64/liblwjgl.dylib --acl public-read --storage-class REDUCED_REDUNDANCY"
