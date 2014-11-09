@@ -29,11 +29,10 @@ private fun String.cleanup(linePrefix: String = "\t * "): String {
 			this append linePrefix
 			this append '\n'
 			this append linePrefix
-			if ( !text.startsWith("<h3>", start) )
-				this append "<p>"
+			val p = !text.startsWith("<h3>", start)
+			if ( p ) this append "<p>"
 			this.append(text, start, end)
-			if ( (end - start) < 5 || !text.startsWith("</h3>", end - 5) )
-				this append "</p>"
+			if ( p ) this append "</p>"
 		}
 
 		builder.append(trimmed, 0, matcher.start())
@@ -64,7 +63,7 @@ fun String.toJavaDoc(indentation: String = "\t", allowSingleLine: Boolean = true
 }
 
 /** Specialized conversion for methods. */
-fun String.toJavaDoc(paramsIn: Stream<Parameter>, returnDoc: String): String {
+fun String.toJavaDoc(paramsIn: Stream<Parameter>, returnDoc: String, since: String): String {
 	// TODO: This is shit, optimize
 	val params = paramsIn.filterTo(ArrayList<Parameter>()) { !it.isAutoSizeResultOut }
 	if ( params.isEmpty() && returnDoc.isEmpty() )
@@ -96,6 +95,12 @@ fun String.toJavaDoc(paramsIn: Stream<Parameter>, returnDoc: String): String {
 		builder append "\n\t *"
 		builder append "\n\t * @return "
 		builder append returnDoc.cleanup("\t *         ")
+	}
+
+	if ( !since.isEmpty() ) {
+		builder append "\n\t *"
+		builder append "\n\t * @since "
+		builder append since
 	}
 
 	builder append "\n\t */"
