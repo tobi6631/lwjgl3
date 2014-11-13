@@ -15,4 +15,4 @@ script:
 - export LWJGL_BUILD_TYPE=nightly
 - ant compile-templates
 - ant compile-native
-- "aws s3 cp bin/macosx/x64/liblwjgl.dylib s3://build.lwjgl.org/nightly/macosx/x64/liblwjgl.dylib --acl public-read --storage-class REDUCED_REDUNDANCY --cache-control \"public, must-revalidate, proxy-revalidate\""
+- "aws s3 cp bin/macosx/x64/liblwjgl.dylib s3://build.lwjgl.org/nightly/macosx/x64/liblwjgl.dylib --acl public-read --storage-class REDUCED_REDUNDANCY --cache-control \"public, must-revalidate, proxy-revalidate, max-age=0\""
