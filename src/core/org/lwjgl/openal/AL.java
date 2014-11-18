@@ -4,12 +4,10 @@
  */
 package org.lwjgl.openal;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLUtil;
 import org.lwjgl.system.FunctionProvider;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -21,48 +19,66 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 public final class AL {
 
-	private static final FunctionProvider functionProvider = new FunctionProvider.Default() {
+	private static FunctionProvider functionProvider;
 
-		// We'll use alGetProcAddress for both core and extension entry points.
-		// To do that, we need to first grab the alGetProcAddress function from
-		// the OpenAL native library.
-		private final long alGetProcAddress = ALC.functionProvider.getFunctionAddress("alGetProcAddress");
-
-		@Override
-		public long getFunctionAddress(CharSequence functionName) {
-			ByteBuffer nameBuffer = memEncodeASCII(functionName);
-			long address = nalGetProcAddress(memAddress(nameBuffer), alGetProcAddress);
-			if ( address == NULL )
-				LWJGLUtil.log("Failed to locate address for AL function " + functionName);
-
-			return address;
-		}
-
-		@Override
-		protected void destroy() {}
-	};
-
-	private static ALContext context;
+	private static ALContext processContext;
+	private static final ThreadLocal<ALContext> threadContext = new ThreadLocal<ALContext>();
 
 	private AL() {}
+
+	static void init() {
+		functionProvider = new FunctionProvider.Default() {
+
+			// We'll use alGetProcAddress for both core and extension entry points.
+			// To do that, we need to first grab the alGetProcAddress function from
+			// the OpenAL native library.
+			private final long alGetProcAddress = ALC.getFunctionProvider().getFunctionAddress("alGetProcAddress");
+
+			@Override
+			public long getFunctionAddress(CharSequence functionName) {
+				ByteBuffer nameBuffer = memEncodeASCII(functionName);
+				long address = nalGetProcAddress(memAddress(nameBuffer), alGetProcAddress);
+				if ( address == NULL )
+					LWJGLUtil.log("Failed to locate address for AL function " + functionName);
+
+				return address;
+			}
+
+			@Override
+			protected void destroy() {}
+		};
+	}
+
+	static void destroy() {
+		if ( functionProvider == null )
+			return;
+
+		setCurrentProcess(null);
+
+		functionProvider.release();
+		functionProvider = null;
+	}
 
 	public static FunctionProvider getFunctionProvider() {
 		return functionProvider;
 	}
 
-	static void setCurrent(ALContext context) {
-		// TODO: Synchronize or let the user handle it?
-		// The current AL context is process-wide, so synchronization won't offer anything interesting.
-		// Users doing advanced stuff can sync as necessary.
+	static void setCurrentProcess(ALContext context) {
+		processContext = context;
+		threadContext.set(null); // See EXT_thread_local_context, second Q.
+	}
 
-		// TODO: Handle ALC_EXT_thread_local_context?
-		// Add custom code to alcSetThreadContext and new ThreadLocal context state to track everything.
-		AL.context = context;
-		ALC.setCurrent(context.getDeviceContext());
+	static void setCurrentThread(ALContext context) {
+		threadContext.set(context);
+	}
+
+	public static ALContext getCurrentContext() {
+		ALContext context = threadContext.get();
+		return context != null ? context : processContext;
 	}
 
 	public static ALCapabilities getCapabilities() {
-		return context.getCapabilities();
+		return getCurrentContext().getCapabilities();
 	}
 
 	/**
@@ -123,34 +139,10 @@ public final class AL {
 		}
 	}
 
-	public static ALContext create() {
-		return create(null, 44100, 60, false);
-	}
-
 	public static void destroy(ALContext alContext) {
-		ALCContext deviceContext = alContext.getDeviceContext();
+		ALDevice device = alContext.getDevice();
 		alContext.destroy();
-		deviceContext.destroy();
-	}
-
-	public static ALContext create(String deviceArguments, int contextFrequency, int contextRefresh, boolean contextSynchronized) {
-		ALCContext deviceContext = ALC.createALCContextFromDevice(deviceArguments);
-		IntBuffer attribs = BufferUtils.createIntBuffer(16);
-
-		attribs.put(ALC_FREQUENCY);
-		attribs.put(contextFrequency);
-
-		attribs.put(ALC_REFRESH);
-		attribs.put(contextRefresh);
-
-		attribs.put(ALC_SYNC);
-		attribs.put(contextSynchronized ? ALC10.ALC_TRUE : ALC10.ALC_FALSE);
-
-		attribs.put(0);
-		attribs.flip();
-
-		long contextHandle = alcCreateContext(deviceContext.getDevice(), attribs);
-		return new ALContext(deviceContext, contextHandle);
+		device.destroy();
 	}
 
 }

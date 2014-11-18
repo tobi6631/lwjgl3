@@ -19,54 +19,47 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 public final class ALC {
 
-	static final FunctionProviderLocal functionProvider;
+	private static FunctionProviderLocal functionProvider;
 
 	static {
-		final String libName;
-		final String libNamePlatform;
+		if ( !Boolean.getBoolean("org.lwjgl.openal.explicitInit") )
+			create();
+	}
+
+	private ALC() {}
+
+	public static void create() {
+		String libName;
 		switch ( LWJGLUtil.getPlatform() ) {
 			case WINDOWS:
 				libName = "OpenAL32";
-				libNamePlatform = "OpenAL32.dll";
 				break;
 			case LINUX:
 				libName = "openal";
-				libNamePlatform = "libopenal.so";
 				break;
 			case MACOSX:
 				libName = "openal";
-				// TODO: Support .framework too?
-				libNamePlatform = "libopenal.dylib";
 				break;
 			default:
 				throw new IllegalStateException();
 		}
 
+		create(System.getProperty("org.lwjgl.openal.libname", libName));
+	}
+
+	public static void create(String libName) {
+		if ( functionProvider != null )
+			throw new IllegalStateException("OpenAL has already been created.");
+
+		final DynamicLinkLibrary OPENAL = LWJGLUtil.loadLibraryNative(libName);
+
 		functionProvider = new FunctionProviderLocal.Default() {
 
-			private final DynamicLinkLibrary OPENAL;
-			private final long alcGetProcAddress;
+			private final long alcGetProcAddress = getFunctionAddress("alcGetProcAddress");
 
 			{
-				String[] paths = LWJGLUtil.getLibraryPaths(ALC.class.getClassLoader(), libName, libNamePlatform);
-
-				DynamicLinkLibrary lib = null;
-				for ( String path : paths ) {
-					try {
-						lib = apiCreateLibrary(path);
-						break;
-					} catch (Exception e) {
-						LWJGLUtil.log("Failed to load " + path + ": " + e.getMessage());
-					}
-				}
-				if ( lib == null )
-					throw new RuntimeException("Failed to locate the OpenAL library");
-
-				OPENAL = lib;
-
-				alcGetProcAddress = getFunctionAddress("alcGetProcAddress");
 				if ( alcGetProcAddress == NULL ) {
-					lib.release();
+					OPENAL.release();
 					throw new RuntimeException("A core ALC function is missing. Make sure that OpenAL has been loaded.");
 				}
 			}
@@ -95,43 +88,30 @@ public final class ALC {
 				OPENAL.release();
 			}
 		};
+
+		AL.init();
 	}
 
-	private static ALCContext context;
+	public static void destroy() {
+		if ( functionProvider == null )
+			return;
 
-	private ALC() {}
+		AL.destroy();
+
+		functionProvider.release();
+		functionProvider = null;
+	}
 
 	public static FunctionProviderLocal getFunctionProvider() {
 		return functionProvider;
 	}
 
-	/**
-	 * Creates an ALCContext from the specified device. The device name may be null,
-	 * in which case the default device will be used.
-	 *
-	 * @param deviceName the device to open
-	 *
-	 * @return the created ALCContext on the specified device
-	 */
-	public static ALCContext createALCContextFromDevice(String deviceName) {
-		long alcOpenDevice = functionProvider.getFunctionAddress("alcOpenDevice");
-		if ( LWJGLUtil.CHECKS )
-			checkFunctionAddress(alcOpenDevice);
-
-		ByteBuffer nameBuffer = deviceName == null ? null : memEncodeUTF8(deviceName);
-		long device = nalcOpenDevice(memAddressSafe(nameBuffer), alcOpenDevice);
-		if ( device == NULL )
-			throw new RuntimeException("Failed to open the device.");
-
-		return new ALCContext(device);
-	}
-
-	static void setCurrent(ALCContext context) {
-		ALC.context = context;
-	}
-
 	public static ALCCapabilities getCapabilities() {
-		return context.getCapabilities();
+		ALContext context = AL.getCurrentContext();
+		if ( context != null )
+			return context.getDevice().getCapabilities();
+
+		return ALDevice.getLastDevice().getCapabilities();
 	}
 
 	// We could remove the method below if we add support for it in the code generator.
@@ -214,12 +194,6 @@ public final class ALC {
 
 		// Parse EXTENSIONS string
 		String extensionsString = memDecodeUTF8(memByteBufferNT1(checkPointer(nalcGetString(device, ALC_EXTENSIONS, GetString))));
-
-		/*
-		OpenALSoft: ALC_ENUMERATE_ALL_EXT ALC_ENUMERATION_EXT ALC_EXT_CAPTURE ALC_EXT_DEDICATED ALC_EXT_disconnect ALC_EXT_EFX ALC_EXT_thread_local_context
-		ALC_SOFT_loopback
-		Creative: ALC_ENUMERATE_ALL_EXT ALC_ENUMERATION_EXT ALC_EXT_CAPTURE ALC_EXT_EFX
-		 */
 
 		StringTokenizer tokenizer = new StringTokenizer(extensionsString);
 		while ( tokenizer.hasMoreTokens() ) {
