@@ -11,6 +11,7 @@ install:
 - brew install ant
 - brew install awscli
 script:
+- export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home
 - export LWJGL_BUILD_TYPE=nightly
 - ant compile-templates
 - ant compile-native
