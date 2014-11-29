@@ -201,16 +201,10 @@ public final class GL {
 			minorVersion = __buffer.intValue(0);
 		} else {
 			// Fallback to the string query.
-			String version = memDecodeUTF8(memByteBufferNT1(checkPointer(nglGetString(GL_VERSION, GetString))));
+			APIVersion version = apiParseVersion(memDecodeUTF8(checkPointer(nglGetString(GL_VERSION, GetString))));
 
-			try {
-				StringTokenizer versionTokenizer = new StringTokenizer(version, ". ");
-
-				majorVersion = Integer.parseInt(versionTokenizer.nextToken());
-				minorVersion = Integer.parseInt(versionTokenizer.nextToken());
-			} catch (Exception e) {
-				throw new IllegalStateException("The OpenGL version string is malformed: " + version, e);
-			}
+			majorVersion = version.major;
+			minorVersion = version.minor;
 		}
 
 		if ( majorVersion < 1 || (majorVersion == 1 && minorVersion < 1) )
@@ -234,7 +228,7 @@ public final class GL {
 
 		if ( majorVersion < 3 ) {
 			// Parse EXTENSIONS string
-			String extensionsString = memDecodeASCII(memByteBufferNT1(checkPointer(nglGetString(GL_EXTENSIONS, GetString))));
+			String extensionsString = memDecodeASCII(checkPointer(nglGetString(GL_EXTENSIONS, GetString)));
 
 			StringTokenizer tokenizer = new StringTokenizer(extensionsString);
 			while ( tokenizer.hasMoreTokens() )
@@ -247,7 +241,7 @@ public final class GL {
 
 			long GetStringi = checkPointer(checkFunctionAddress(functionProvider.getFunctionAddress("glGetStringi")));
 			for ( int i = 0; i < extensionCount; i++ )
-				supportedExtensions.add(memDecodeASCII(memByteBufferNT1(nglGetStringi(GL_EXTENSIONS, i, GetStringi))));
+				supportedExtensions.add(memDecodeASCII(nglGetStringi(GL_EXTENSIONS, i, GetStringi)));
 
 			// In real drivers, we may encounter the following weird scenarios:
 			// - 3.1 context without GL_ARB_compatibility but with deprecated functionality exposed and working.
@@ -292,13 +286,13 @@ public final class GL {
 
 		long wglGetExtensionsString = functionProvider.getFunctionAddress("wglGetExtensionsStringARB");
 		if ( wglGetExtensionsString != NULL ) {
-			wglExtensions = memDecodeASCII(memByteBufferNT1(nwglGetExtensionsStringARB(wglGetCurrentDC(), wglGetExtensionsString)));
+			wglExtensions = memDecodeASCII(nwglGetExtensionsStringARB(wglGetCurrentDC(), wglGetExtensionsString));
 		} else {
 			wglGetExtensionsString = functionProvider.getFunctionAddress("wglGetExtensionsStringEXT");
 			if ( wglGetExtensionsString == NULL )
 				return;
 
-			wglExtensions = memDecodeASCII(memByteBufferNT1(nwglGetExtensionsStringEXT(wglGetExtensionsString)));
+			wglExtensions = memDecodeASCII(nwglGetExtensionsStringEXT(wglGetExtensionsString));
 		}
 
 		StringTokenizer tokenizer = new StringTokenizer(wglExtensions);
@@ -339,7 +333,7 @@ public final class GL {
 		if ( glXQueryExtensionsString == NULL )
 			return;
 
-		String glxExtensions = memDecodeASCII(memByteBufferNT1(nglXQueryExtensionsString(display, 0, glXQueryExtensionsString)));
+		String glxExtensions = memDecodeASCII(nglXQueryExtensionsString(display, 0, glXQueryExtensionsString));
 		StringTokenizer tokenizer = new StringTokenizer(glxExtensions);
 		while ( tokenizer.hasMoreTokens() )
 			supportedExtensions.add(tokenizer.nextToken());
