@@ -13,9 +13,9 @@ import org.testng.annotations.Test;
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.Pointer.*;
+import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.*;
-import static org.lwjgl.system.glfw.GLFW.*;
 import static org.lwjgl.system.libffi.LibFFI.*;
 import static org.testng.Assert.*;
 
@@ -50,8 +50,6 @@ public class LibFFITest {
 		// Prepare the call interface
 		ByteBuffer cif = ffi_cif.malloc();
 
-		ByteBuffer returnType = memByteBuffer(ffi_type_void, ffi_type.SIZEOF); // Returns void
-
 		PointerBuffer argumentTypes = BufferUtils.createPointerBuffer(5); // 5 arguments
 		argumentTypes.put(0, ffi_type_pointer); // JNIEnv*
 		argumentTypes.put(1, ffi_type_pointer); // jclass
@@ -59,7 +57,7 @@ public class LibFFITest {
 		argumentTypes.put(3, ffi_type_sint64); // int* (jlong)
 		argumentTypes.put(4, ffi_type_sint64); // int* (jlong)
 
-		int status = ffi_prep_cif(cif, FFI_DEFAULT_ABI, returnType, argumentTypes);
+		int status = ffi_prep_cif(cif, FFI_DEFAULT_ABI, ffi_type_void, argumentTypes);
 		if ( status != FFI_OK )
 			throw new IllegalStateException("ffi_prep_cif failed: " + status);
 
@@ -125,9 +123,9 @@ public class LibFFITest {
 	private static long glfwGetWindowSizeAddress() {
 		DynamicLinkLibrary lib = LWJGLUtil.loadLibraryNative("lwjgl");
 
-		long glfwGetWindowSize = lib.getFunctionAddress("Java_org_lwjgl_system_glfw_GLFW_nglfwGetWindowSize");
+		long glfwGetWindowSize = lib.getFunctionAddress("Java_org_lwjgl_glfw_GLFW_nglfwGetWindowSize");
 		if ( glfwGetWindowSize == NULL )
-			glfwGetWindowSize = lib.getFunctionAddress("_Java_org_lwjgl_system_glfw_GLFW_nglfwGetWindowSize@32"); // __stdcall (Win32)
+			glfwGetWindowSize = lib.getFunctionAddress("_Java_org_lwjgl_glfw_GLFW_nglfwGetWindowSize@32"); // __stdcall (Win32)
 
 		assertTrue(glfwGetWindowSize != NULL);
 

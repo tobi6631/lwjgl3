@@ -54,6 +54,7 @@ fun main(args: Array<String>) {
 		// org.lwjgl.opengl -> org.lwjgl.opengl.OpenglPackage (the first letter is capitalized)
 
 		// TODO: Move these to args[2] or a file in /config to enable build customization
+		generate("org.lwjgl.glfw")
 		generate("org.lwjgl.openal")
 		generate("org.lwjgl.opencl")
 		generate("org.lwjgl.opengl")
@@ -61,10 +62,10 @@ fun main(args: Array<String>) {
 		generate("org.lwjgl.system.linux")
 		generate("org.lwjgl.system.macosx")
 		generate("org.lwjgl.system.windows")
-		generate("org.lwjgl.system.glfw")
 
 		// Generate utility classes. These are auto-registered during the process above.
 		generate("struct", Generator.structs)
+		generate("callback", Generator.callbacks)
 		generate("custom class", Generator.customClasses)
 	}
 }
@@ -77,11 +78,25 @@ class Generator(
 
 	class object {
 		val structs = ArrayList<Struct>()
+		val callbacks = ArrayList<CallbackFunction>()
+		val callbacksSAM = HashMap<String, MutableList<CallbackFunction>>()
 		val customClasses = ArrayList<CustomClass>()
 
 		fun register(struct: Struct): Struct {
 			structs add struct
 			return struct
+		}
+
+		fun register(callback: CallbackFunction, samConstructor: String?) {
+			callbacks add callback
+			if ( samConstructor == null )
+				return
+
+			samConstructor.split(",") forEach {
+				callbacksSAM.getOrPut("${callback.packageName}.$it") {
+					ArrayList<CallbackFunction>()
+				}.add(callback)
+			}
 		}
 
 		fun <T: CustomClass> register(customClass: T): T {
