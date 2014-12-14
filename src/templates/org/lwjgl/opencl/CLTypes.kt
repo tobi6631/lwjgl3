@@ -129,7 +129,7 @@ val cl_charUTF8_pp = PointerType(cl_charUTF8_p)
 
 // structs
 
-val cl_image_format = struct(OPENCL_PACKAGE, "cl_image_format") {
+val cl_image_format = struct(OPENCL_PACKAGE, "CLImageFormat", structName = "cl_image_format") {
 	documentation = "Image format struct."
 	nativeImport("OpenCL.h")
 	cl_channel_order.member("image_channel_order")
@@ -137,7 +137,7 @@ val cl_image_format = struct(OPENCL_PACKAGE, "cl_image_format") {
 }.nativeType
 val cl_image_format_p = StructType(cl_image_format)
 
-val cl_image_desc = struct(OPENCL_PACKAGE, "cl_image_desc") {
+val cl_image_desc = struct(OPENCL_PACKAGE, "CLImageDesc", structName = "cl_image_desc") {
 	documentation = "Image description struct."
 	nativeImport("OpenCL.h")
 	cl_mem_object_type.member("image_type")
@@ -156,23 +156,23 @@ val cl_image_desc = struct(OPENCL_PACKAGE, "cl_image_desc") {
 }.nativeType
 val cl_image_desc_p = StructType(cl_image_desc)
 
-val cl_bus_address_amd = struct(OPENCL_PACKAGE, "cl_bus_address_amd") {
+val cl_bus_address_amd = struct(OPENCL_PACKAGE, "CLBusAddressAMD", structName = "cl_bus_address_amd") {
 	documentation = "Used in AMDBusAddressableMemory##clEnqueueMakeBuffersResidentAMD()."
 	nativeImport("OpenCL.h")
-	cl_ulong.member("surface_bus_address")
-	cl_ulong.member("marker_bus_address")
+	cl_long.member("surface_bus_address")
+	cl_long.member("marker_bus_address")
 }.nativeType
 val cl_bus_address_amd_p = StructType(cl_bus_address_amd)
 
 fun config() {
-	struct(OPENCL_PACKAGE, "cl_buffer_region") {
+	struct(OPENCL_PACKAGE, "CLBufferRegion", structName = "cl_buffer_region") {
 		documentation = "Buffer region struct."
 		nativeImport("OpenCL.h")
 		size_t.member("origin")
 		size_t.member("size")
 	}
 
-	struct(OPENCL_PACKAGE, "cl_device_topology_amd") {
+	struct(OPENCL_PACKAGE, "CLDeviceTopologyAMD", structName = "cl_device_topology_amd") {
 		documentation =
 			"The struct returned by CL10##clGetDeviceInfo() with {@code param_name} set to AMDDeviceTopology##CL_DEVICE_TOPOLOGY_AMD."
 		nativeImport("OpenCL.h")
@@ -187,6 +187,15 @@ fun config() {
 			cl_char.member("device")
 			cl_char.member("function")
 		}.member("pcie")
+	}
+
+	struct(OPENCL_PACKAGE, "CLMotionEstimationDescINTEL", structName = "cl_motion_estimation_desc_intel") {
+		documentation = "Describes the configuration of the motion estimation algorithm."
+		nativeImport("OpenCL.h")
+		cl_uint.member("mb_block_type");
+		cl_uint.member("subpixel_mode");
+		cl_uint.member("sad_adjust_mode");
+		cl_uint.member("search_path_type");
 	}
 }
 
@@ -287,3 +296,19 @@ val cl_gl_object_type = IntegerType("cl_gl_object_type", PrimitiveMapping.INT)
 val cl_gl_object_type_p = PointerType(cl_gl_object_type)
 
 val cl_gl_texture_info = IntegerType("cl_gl_texture_info", PrimitiveMapping.INT)
+
+// APPLE
+
+val intptr_t = PrimitiveType("intptr_t", PrimitiveMapping.PTR)
+val cl_queue_properties_APPLE = typedef(intptr_t, "cl_queue_properties_APPLE")
+val cl_queue_properties_APPLE_p = PointerType(cl_queue_properties_APPLE)
+
+// EXT
+
+val cl_mem_migration_flags_ext = typedef(cl_bitfield, "cl_mem_migration_flags_ext")
+
+// INTEL
+
+val cl_accelerator_intel = PointerType("cl_accelerator_intel", includesPointer = true)
+val cl_accelerator_type_intel = typedef(cl_uint, "cl_accelerator_type_intel")
+val cl_accelerator_info_intel = typedef(cl_uint, "cl_accelerator_info_intel")

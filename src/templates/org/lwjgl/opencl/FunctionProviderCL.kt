@@ -5,9 +5,7 @@
 package org.lwjgl.opencl
 
 import java.io.PrintWriter
-import java.util.Comparator
 import org.lwjgl.generator.*
-import org.lwjgl.generator.opengl.*
 
 private val NativeClass.capName: String
 	get() = if ( templateName.startsWith(prefix) ) {
@@ -19,7 +17,7 @@ private val NativeClass.capName: String
 		"${prefixTemplate}_$templateName"
 	}
 
-private val FunctionProviderCL = Generator.register(object : FunctionProvider(OPENCL_PACKAGE, "CLCapabilities") {
+private val FunctionProviderCL = Generator.register(object: FunctionProvider(OPENCL_PACKAGE, "CLCapabilities") {
 
 	override fun PrintWriter.generateFunctionGetters(nativeClass: NativeClass) {
 		println("\t// --- [ Function Addresses ] ---\n")
@@ -80,11 +78,11 @@ private val FunctionProviderCL = Generator.register(object : FunctionProvider(OP
 	public final int minorVersion;
 """)
 
-		println("\t/** Indicates whether an OpenCL functionality is available or not. */")
-		println("\tpublic final boolean")
-		for ( i in classes.indices ) {
-			print("\t\t${classes[i].capName}")
-			println(if ( i == classes.lastIndex ) ";" else ",")
+		classes forEach {
+			val documentation = it.documentation
+			if ( documentation != null )
+				println((if ( it.hasBody ) "When true, {@link ${it.className}} is supported." else documentation).toJavaDoc())
+			println("\tpublic final boolean ${it.capName};")
 		}
 
 		// ICD constructor
@@ -147,7 +145,7 @@ private fun String.nativeClassCL(templateName: String, postfix: String = "", ini
 	nativeClass("org.lwjgl.opencl", templateName, prefix = "CL", postfix = postfix, prefixTemplate = "cl", functionProvider = FunctionProviderCL, init = init)
 
 private val NativeClass.extensionLink: String
-	get() = url("http://www.khronos.org/registry/cl/extensions/khr/cl_$templateName.txt", templateName)
+	get() = url("http://www.khronos.org/registry/cl/extensions/${templateName.substring(0, templateName.indexOf('_'))}/cl_$templateName.txt", templateName)
 
 private val NativeClass.extensionName: String
 	get() = "<strong>$templateName</strong>"
