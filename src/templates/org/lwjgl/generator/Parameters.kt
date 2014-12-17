@@ -109,7 +109,7 @@ class Parameter(
 
 	private fun doc(description: String, links: String, linkMode: LinkMode): String {
 		val trimmed = description.trim()
-		val builder = StringBuilder(trimmed.size + 16 + links.size) // Rough estimate to reduce mallocs. TODO: validate
+		val builder = StringBuilder(trimmed.length() + 16 + links.length()) // Rough estimate to reduce mallocs. TODO: validate
 
 		val effectiveLinkMode: LinkMode
 		if ( trimmed.isEmpty() ) {
@@ -140,7 +140,7 @@ class Parameter(
 	// --- [ Helper functions & properties ] ----
 
 	override val isSpecial: Boolean
-		get() = nativeType.mapping == PointerMapping.OPAQUE_POINTER || super.isSpecial
+		get() = (nativeType.mapping == PointerMapping.OPAQUE_POINTER && (nativeType is ObjectType || !has(nullable))) || super.isSpecial
 
 	/** Returns true if this is an output parameter with the autoSizeResult modifier. */
 	val isAutoSizeResultOut: Boolean
